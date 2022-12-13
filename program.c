@@ -16,6 +16,12 @@ int AUX_WaitEventTimeoutCount(SDL_Event* evt, int* ms){
     return evento;
 
 }
+int PointInRect (SDL_Point* p, SDL_Rect* r){
+    return !( p->x < r->x ||
+              p->y < r->y ||
+              p->x > r->x+r->w ||
+              p->y > r->y+r->h );  
+}
 int main (int argc, char* args[])
 {
     /*Inicializacao*/
@@ -47,7 +53,7 @@ int main (int argc, char* args[])
                 close_request = 1;
                 break;
             case SDL_MOUSEBUTTONDOWN:
-                if (!leftMouseButtonDown && event.button.button == SDL_BUTTON_LEFT && SDL_PointInRect(&mousePos, r))
+                if (!leftMouseButtonDown && event.button.button == SDL_BUTTON_LEFT && PointInRect(&mousePos, &r))
                     {
                         leftMouseButtonDown = true;
                         originalx = r.x;
