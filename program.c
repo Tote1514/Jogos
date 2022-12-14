@@ -38,9 +38,11 @@ int main (int argc, char* args[])
     int close_request = 0;
     int leftMouseButtonDown = 0;
     SDL_Point mousePos;
+    SDL_Point clickOffset;
     int originalx;//coordenada x original do retangulo
     int originaly;//coordenada y original do retangulo
-    int digDrag = 0;//Indica se o rectangulo foi arrastado ou nao
+    int didDrag = 0;//Indica se o rectangulo foi arrastado ou nao
+    int cancelado = 0; // Indica se a acao foi cancelada
     while(!close_request){
         SDL_SetRenderDrawColor(ren, 0,0,0,0x00);
         SDL_RenderClear(ren);
@@ -48,14 +50,16 @@ int main (int argc, char* args[])
         SDL_RenderFillRect(ren, &r);
         SDL_RenderPresent(ren);
 
+
+        SDL_WaitEvent(&evt);
         switch(evt.type){
             case SDL_QUIT:
                 close_request = 1;
                 break;
             case SDL_MOUSEBUTTONDOWN:
-                if (!leftMouseButtonDown && event.button.button == SDL_BUTTON_LEFT && PointInRect(&mousePos, &r))
+                if (!leftMouseButtonDown && evt.button.button == SDL_BUTTON_LEFT && PointInRect(&mousePos, &r))
                     {
-                        leftMouseButtonDown = true;
+                        leftMouseButtonDown = 1;
                         originalx = r.x;
                         originaly = r.y;
                         clickOffset.x = mousePos.x - r.x;
@@ -65,28 +69,34 @@ int main (int argc, char* args[])
                 break;
             case SDL_MOUSEBUTTONUP:
                 leftMouseButtonDown = 0;
-                if (didDrag) {
-                    printf("Dropped!");
-                    didDrag = 0;
-                } else {
-                    printf("Clicked!");
+                if (!cancelado)
+                {
+                    if (didDrag) {
+                        printf("Dropped!\n");
+                        didDrag = 0;
+                    } else {
+                        printf("Clicked!\n");
+                    }
                 }
                 break;
             case SDL_MOUSEMOTION:
-                mousePos = { event.motion.x, event.motion.y };
+                mousePos.x = evt.motion.x; 
+                mousePos.y = evt.motion.y;
                 if (leftMouseButtonDown)
                 {
                     r.x = mousePos.x - clickOffset.x;
                     r.y = mousePos.y - clickOffset.y;
-                    didDrag = true;
+                    printf("Dragged\n");
+                    didDrag = 1;
                 }
                 break;
             case SDL_KEYDOWN:
                 if(evt.key.keysym.sym == SDLK_ESCAPE){
-                    if(digDrag){
+                    if(didDrag){
                         r.x = originalx;
                         r.y = originaly;
-                        printf("Canceled...");
+                        cancelado = 1;
+                        printf("Canceled...\n");
                     }
                 }
                 break;
