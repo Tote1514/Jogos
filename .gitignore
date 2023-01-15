@@ -1,1 +1,5 @@
-./a.out
+a.out
+/include
+/lib
+/.vscode
+.DS_Store
