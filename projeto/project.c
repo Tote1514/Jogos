@@ -25,7 +25,7 @@ void get_text_and_rect(SDL_Renderer *renderer, int x, int y, char *text,
     int text_width;
     int text_height;
     SDL_Surface *surface;
-    SDL_Color textColor = {0xFF,0x00,0x00,0xFF};
+    SDL_Color textColor = {255,255,255,0xFF};
 
     surface = TTF_RenderText_Blended(font, text, textColor);
     assert(surface != NULL);
@@ -77,12 +77,14 @@ int main (int argc, char* args[])
     assert(fnt != NULL);
     SDL_Texture* txt;
     assert(txt != NULL);
+    SDL_Texture* txt1;
+    assert(txt != NULL);
    
     /* EXECUÇÃO */
 
-    SDL_Rect raquete1 = { 0,50, 10,50 };
-    SDL_Rect raquete2 = { 490, 50, 10, 50};
-    SDL_Rect bola = {250, 150, 10, 10};
+    SDL_Rect raquete1 = { 0,120, 10,70 };
+    SDL_Rect raquete2 = { 490, 120, 10, 70};
+    SDL_Rect bola = {240, 150, 10, 10};
     SDL_Rect placar;
     SDL_Rect texto_final;
     SDL_Event evt;
@@ -91,6 +93,12 @@ int main (int argc, char* args[])
     int tdie = 60000;
     int melhor_resultado = 0;
     int close_request = 0;
+    int evento_enquanto_pula;
+    int contador;
+    char aux[100];
+    int acabou;
+    int deltax =10;
+    int evento_enquanto_cai;
     Estados estado = INICIO;
 
     while (!close_request) {
@@ -104,8 +112,8 @@ int main (int argc, char* args[])
         switch (estado)
         {
         case INICIO:
-            int contador = 0; // vezes que a bola quica nas raquetes
-            get_text_and_rect(ren, 250, 100, "0", fnt, &txt, &placar);
+            contador = 0; 
+            get_text_and_rect(ren, 240, 80, "0", fnt, &txt, &placar);
             if(isevt){
                 switch (evt.type)
                 {
@@ -122,12 +130,12 @@ int main (int argc, char* args[])
             }
             break;
         case PULANDO:
-            char aux = (char) contador;
-            get_text_and_rect(ren, 250, 100, aux , fnt, &txt, &placar);
-            int evento_enquanto_pula = AUX_WaitEventTimeoutCount(&evt, &espera);
+            sprintf(aux, "%d", contador);
+            get_text_and_rect(ren, 240, 80, aux , fnt, &txt, &placar);
+            evento_enquanto_pula = AUX_WaitEventTimeoutCount(&evt, &espera);
             //fazer essa merda pular
-
-
+            bola.x += deltax;
+            printf("Estou pulando agora\n");
             if (SDL_HasIntersection(&raquete1, &bola) || SDL_HasIntersection(&raquete2, &bola)){
                 //Batendo nas raquetes
                 estado = QUICANDO;
@@ -136,82 +144,100 @@ int main (int argc, char* args[])
                 //Batendo nas paredes
                 estado = MORTO;
 
-            }
-            if(evento_enquanto_pula){
-                switch (evt.type)
-                    {
-                    case SDL_MOUSEBUTTONDOWN:
-                        estado = PULANDO;
-                        break;
-                    
-                    case SDL_KEYDOWN:
-                        if(evt.key.keysym.sym==SDLK_SPACE){
-                            estado = PULANDO;
-                        }
-                        break;
-                    }
             }else{
-                estado = CAINDO;
+                if(evento_enquanto_pula){
+                    switch (evt.type)
+                    {
+                        case SDL_MOUSEBUTTONDOWN:
+                            estado = PULANDO;
+                            break;
+                    
+                        case SDL_KEYDOWN:
+                            if(evt.key.keysym.sym==SDLK_SPACE){
+                                estado = PULANDO;
+                            }
+                            break;
+                    }
+                }else{
+                    estado = CAINDO;
+                    //cair
+                    tqueda = 500;
+                }
             }
+           
             break;
         case QUICANDO:
             contador += 1;// Aumentar 1 no contador de vezes que a bola quicou nas raquetes
-            char aux = (char) contador;
-            get_text_and_rect(ren, 250, 100, aux , fnt, &txt, &placar);
+            printf("Estou quicando agora\n");
+            deltax = -deltax;
+            if(bola.x < 250){
+                bola.x = raquete1.w;
+            }else{
+                bola.x = raquete2.x - bola.w;
+            }
+            sprintf(aux, "%d", contador);
+            get_text_and_rect(ren, 240, 80, aux , fnt, &txt, &placar);
             //Inverter o sentido 
 
 
             //mexer raquete
             bola.x < 250 ? posicao_raquete(&raquete1):posicao_raquete(&raquete2);
+            estado = CAINDO;
 
-            //atualizar obstaculos
+            //atualizar obstaculos que ainda nao existem kkkk
             
             break;
         case CAINDO:
-            int evento_enquanto_cai = AUX_WaitEventTimeoutCount(&evt, &tqueda);
-            char aux = (char) contador;
-            get_text_and_rect(ren, 250, 100, aux , fnt, &txt, &placar);
+            bola.x += deltax;
+            evento_enquanto_cai = AUX_WaitEventTimeoutCount(&evt, &tqueda);
+            sprintf(aux, "%d", contador);
+            printf("%d", bateu_parede(&bola));
+            printf("Estou caindo agora\n");
+            get_text_and_rect(ren, 240, 80, aux , fnt, &txt, &placar);
             if (SDL_HasIntersection(&raquete1, &bola) || SDL_HasIntersection(&raquete2, &bola)){
                 //Batendo nas raquetes
                 estado = QUICANDO;
                     
             }else if(bateu_parede(&bola)){
                 //Batendo nas paredes
+                printf("Ele entrou aqui para morre\n");
                 estado = MORTO;
 
-            }
-            if(evento_enquanto_cai){
-                switch (evt.type)
-                    {
-                    case SDL_MOUSEBUTTONDOWN:
-                        estado = PULANDO;
-                        break;
-                    
-                    case SDL_KEYDOWN:
-                        if(evt.key.keysym.sym==SDLK_SPACE){
-                            estado = PULANDO;
-                        }
-                        break;
-                    }
             }else{
-                estado = CAINDO;
-                //cair
-                tqueda = 500;
+                if(evento_enquanto_cai){
+                    switch (evt.type)
+                    {
+                        case SDL_MOUSEBUTTONDOWN:
+                            estado = PULANDO;
+                            break;
+                    
+                        case SDL_KEYDOWN:
+                            if(evt.key.keysym.sym==SDLK_SPACE){
+                                estado = PULANDO;
+                            }
+                            break;
+                    }
+                }else{
+                    estado = CAINDO;
+                    //cair
+                    tqueda = 500;
+                }
             }
             break;
         case MORTO:
-            bola.x = 250;
+            printf("Eu estou morto\n");
+            bola.x = 240;
             bola.y = 150;
-            char resultado = (char) contador;
-            get_text_and_rect(ren, 220, 75, "SEU RESULTADO FOI:", fnt, &txt, &texto_final);
-            get_text_and_rect(ren, 250, 120, resultado, fnt, &txt, &placar);
-
+            sprintf(aux, "%d", contador);
+            get_text_and_rect(ren, 220, 75, "3", fnt, &txt1, &texto_final);
+            get_text_and_rect(ren, 250, 120, aux, fnt, &txt, &placar);
+            SDL_RenderCopy(ren, txt1, NULL, &texto_final);
             //Calculo do melhor placar ate agora
             if(contador > melhor_resultado){
                 melhor_resultado = contador;
             }
 
-            int acabou = AUX_WaitEventTimeoutCount(&evt, &tdie);
+            acabou = AUX_WaitEventTimeoutCount(&evt, &tdie);
             if(acabou){
                 // Se apertar space ou clicar o jogo comeca de novo
                 switch (evt.type)
