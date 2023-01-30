@@ -56,16 +56,40 @@ void posicao_raquete(SDL_Rect* p){
 }
 
 //funcao para mudar as coordenadas dos obstaculos
-void posicao_obstaculos(SDL_Rect* r[], int quantidade){
-    for (int i = 0; i < quantidade; i++)
-    {
-        int x =  (rand() % (WINDOW_WIDTH-100)) + 100;
-        int y = (rand() % (WINDOW_HEIGHT-30)) + 30;
-        r[i]->x = x;
-        r[i]->y = y;
-        r[i]->h = 10;
-        r[i]->w = 10;
-    }
+void posicao_obstaculos(SDL_Rect r[], int quantidade){
+    int i;
+    int metadex[]={250, 225, 275};
+    int coordenaday[]={75, 100, 150, 200};
+    int esquerdax[]={100, 150,175, 200};
+    int direitax[]= {300,325, 350, 400};
+
+    //Posicao do obstaculo da metade
+    int x =  rand() % 3;
+    int y = rand() % 4;
+    r[i].x = metadex[x];
+    r[i].y = coordenaday[y];
+    r[i].h = 30;
+    r[i].w = 30;
+    i++;
+
+    //Posicao do obstaculo da esquerda
+    x =  rand() % 3;
+    y = rand() % 4;
+    r[i].x = esquerdax[x];
+    r[i].y = coordenaday[y];
+    r[i].h = 30;
+    r[i].w = 30;
+    i++;
+
+    //Posicao do obstaculo da direita
+    x =  rand() % 3;
+    y = rand() % 4;
+    r[i].x = direitax[x];
+    r[i].y = coordenaday[y];
+    r[i].h = 30;
+    r[i].w = 30;
+
+    
     
 }
 
@@ -82,10 +106,16 @@ void escolher_corte(SDL_Rect* c){
 }
 
 //funcao que detecta uma colisao com algum dos obstaculos 
-int colisao(SDL_Rect* b, SDL_Rect* r[]){
-    for (int i = 0; i < 3; i++)
+int colisao(SDL_Rect* b, SDL_Rect r[]){
+    int i;
+    SDL_Rect aux;
+    for (i = 0; i < 3; i++)
     {
-        if(SDL_HasIntersection(&b, &r[i])){
+        aux.x = r[i].x;
+        aux.y = r[i].y;
+        aux.h = r[i].w;
+        aux.w = r[i].h;
+        if(SDL_HasIntersection(b, &aux)){
             return 1;
         }
     }
@@ -95,7 +125,6 @@ int colisao(SDL_Rect* b, SDL_Rect* r[]){
 
 typedef enum{
     PULANDO,
-    CAINDO,
     MORTO, 
     QUICANDO, 
     INICIO
@@ -129,7 +158,7 @@ int main (int argc, char* args[])
     SDL_Rect raquete2 = { 490, 120, 10, 70};
     SDL_Rect bola = {240, 150, 10, 10};
     SDL_Rect obstaculos[3];
-    SDL_Rect corte;
+    SDL_Rect corte[3];
 
     SDL_Rect placar;
     SDL_Rect texto_final;
@@ -150,7 +179,11 @@ int main (int argc, char* args[])
     int contador;
     char aux[100];
     int acabou;
-    int deltax =10;
+    int velocidadex =2;
+    int velocidadey = -2;
+    int gravidade = 2;
+
+    int i;
     int evento_enquanto_cai;
 
     Estados estado = INICIO;
@@ -168,7 +201,7 @@ int main (int argc, char* args[])
         case INICIO:
             contador = 0; 
             comecou = 0;
-            get_text_and_rect(ren, 220, 75, " ", fnt, &txt1, &texto_final);
+            get_text_and_rect(ren, 150, 50, " ", fnt, &txt1, &texto_final);
             get_text_and_rect(ren, 240, 80, "0", fnt, &txt, &placar);
             if(isevt){
                 switch (evt.type)
@@ -176,14 +209,20 @@ int main (int argc, char* args[])
                 case SDL_MOUSEBUTTONDOWN:
                     estado = PULANDO;
                     comecou = 1;
-                    posicao_obstaculos(&obstaculos,3);
+                    posicao_obstaculos(obstaculos,3);
+                    for (i = 0; i < 3; i++) {
+                        escolher_corte(&corte[i]);
+                    }
                     break;
                 
                 case SDL_KEYDOWN:
                     if(evt.key.keysym.sym==SDLK_SPACE){
                         estado = PULANDO;
                         comecou = 1;
-                        posicao_obstaculos(&obstaculos,3);
+                        posicao_obstaculos(obstaculos,3);
+                        for (i = 0; i < 3; i++) {
+                            escolher_corte(&corte[i]);
+                        }
                     }
                     break;
                 }
@@ -194,17 +233,32 @@ int main (int argc, char* args[])
 
             startTime = SDL_GetTicks();
             deltaTime = SDL_GetTicks() - startTime;
-            get_text_and_rect(ren, 220, 75, " ", fnt, &txt1, &texto_final);
+            if (deltatime > 20)
+            {
+                deltatime = 20;
+            }
+            
+            get_text_and_rect(ren, 150, 50, " ", fnt, &txt1, &texto_final);
             get_text_and_rect(ren, 240, 80, aux , fnt, &txt, &placar);
             evento_enquanto_pula = AUX_WaitEventTimeoutCount(&evt, &espera);
             //fazer essa merda pular
-            bola.x += deltax;
+            //bola.x += velocidadex;
+            
+            bola.y += velocidadey*deltatime;
+            bola.x += velocidadex*deltatime;
+
+            velocidadey = velocidadey + gravidade*deltatime;
+            velocidadex += velocidadex;
+
+
             printf("Estou pulando agora\n");
+
+
             if (SDL_HasIntersection(&raquete1, &bola) || SDL_HasIntersection(&raquete2, &bola)){
                 //Batendo nas raquetes
                 estado = QUICANDO;
                     
-            }else if(bateu_parede(&bola)){
+            }else if(bateu_parede(&bola)|| colisao(&bola, obstaculos)){
                 //Batendo nas paredes
                 estado = MORTO;
 
@@ -213,19 +267,17 @@ int main (int argc, char* args[])
                     switch (evt.type)
                     {
                         case SDL_MOUSEBUTTONDOWN:
-                            estado = PULANDO;
+                            
                             break;
                     
                         case SDL_KEYDOWN:
                             if(evt.key.keysym.sym==SDLK_SPACE){
-                                estado = PULANDO;
+                                
                             }
                             break;
                     }
                 }else{
-                    estado = CAINDO;
-                    //cair
-                    tqueda = 500;
+                    espera = 500;
                 }
             }
            
@@ -233,7 +285,7 @@ int main (int argc, char* args[])
         case QUICANDO:
             contador += 1;// Aumentar 1 no contador de vezes que a bola quicou nas raquetes
             printf("Estou quicando agora\n");
-            deltax = -deltax;
+            velocidadex = -velocidadex;
             if(bola.x < 250){
                 bola.x = raquete1.w;
             }else{
@@ -241,57 +293,20 @@ int main (int argc, char* args[])
             }
             sprintf(aux, "%d", contador);
 
-            get_text_and_rect(ren, 220, 75, " ", fnt, &txt1, &texto_final);
+            get_text_and_rect(ren, 150, 50, " ", fnt, &txt1, &texto_final);
             get_text_and_rect(ren, 240, 80, aux , fnt, &txt, &placar);
             //Inverter o sentido 
 
 
             //mexer raquete
             bola.x < 250 ? posicao_raquete(&raquete1):posicao_raquete(&raquete2);
-            estado = CAINDO;
 
             //atualizar obstaculos 
-            posicao_obstaculos(&obstaculos,3);
-            
-            break;
-        case CAINDO:
-            bola.x += deltax;
-            evento_enquanto_cai = AUX_WaitEventTimeoutCount(&evt, &tqueda);
-            sprintf(aux, "%d", contador);
-            printf("Estou caindo agora\n");
-
-
-            get_text_and_rect(ren, 220, 75, " ", fnt, &txt1, &texto_final);
-            get_text_and_rect(ren, 240, 80, aux , fnt, &txt, &placar);
-            if (SDL_HasIntersection(&raquete1, &bola) || SDL_HasIntersection(&raquete2, &bola)){
-                //Batendo nas raquetes
-                estado = QUICANDO;
-                    
-            }else if(bateu_parede(&bola)){
-                //Batendo nas paredes
-                printf("Ele entrou aqui para morre\n");
-                estado = MORTO;
-
-            }else{
-                if(evento_enquanto_cai){
-                    switch (evt.type)
-                    {
-                        case SDL_MOUSEBUTTONDOWN:
-                            estado = PULANDO;
-                            break;
-                    
-                        case SDL_KEYDOWN:
-                            if(evt.key.keysym.sym==SDLK_SPACE){
-                                estado = PULANDO;
-                            }
-                            break;
-                    }
-                }else{
-                    estado = CAINDO;
-                    //cair
-                    tqueda = 500;
-                }
+            posicao_obstaculos(obstaculos,3);
+            for (i = 0; i < 3; i++) {
+                escolher_corte(&corte[i]);
             }
+            estado = PULANDO;
             break;
         case MORTO:
             printf("Eu estou morto\n");
@@ -299,8 +314,8 @@ int main (int argc, char* args[])
             bola.x = 240;
             bola.y = 150;
             sprintf(aux, "%d", contador);
-            get_text_and_rect(ren, 220, 75, "SEU RESULTADO:", fnt, &txt1, &texto_final);
-            get_text_and_rect(ren, 250, 120, aux, fnt, &txt, &placar);
+            get_text_and_rect(ren, 150, 50, "SEU RESULTADO FOI:", fnt, &txt1, &texto_final);
+            get_text_and_rect(ren, 240, 80, aux, fnt, &txt, &placar);
 
 
             //Calculo do melhor placar ate agora
@@ -338,9 +353,8 @@ int main (int argc, char* args[])
         SDL_RenderFillRect(ren, &bola);
         //obstaculos
         if(comecou){
-            for (int i = 0; i < 3; i++) {
-                escolher_corte(&corte);
-                SDL_RenderCopy(ren, img, &corte, &obstaculos[i]);
+            for (i = 0; i < 3; i++) {
+                SDL_RenderCopy(ren, img, &corte[i], &obstaculos[i]);
 
             }
         }
