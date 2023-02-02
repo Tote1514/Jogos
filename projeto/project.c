@@ -8,6 +8,7 @@
 #define WINDOW_HEIGHT 250
 #define WINDOW_WIDTH 500
 #define MINIMO_RAQUETE 40
+#define JUMP_VEL 8.5
 
 int AUX_WaitEventTimeoutCount(SDL_Event* evt, int* ms){
     Uint32 antes = SDL_GetTicks();
@@ -57,8 +58,9 @@ void posicao_raquete(SDL_Rect* p){
 }
 
 //funcao para mudar as coordenadas dos obstaculos
+//funcao para mudar as coordenadas dos obstaculos
 void posicao_obstaculos(SDL_Rect r[], int quantidade){
-    int i;
+    int i =0;
     int metadex[]={250, 225, 275};
     int coordenaday[]={75, 100, 150, 200};
     int esquerdax[]={100, 150,175, 200};
@@ -93,8 +95,7 @@ void posicao_obstaculos(SDL_Rect r[], int quantidade){
     
     
 }
-
-//Escolhe o corte da imagem 
+//Escolhe o corte da imagem
 void escolher_corte(SDL_Rect* c){
     int coordenadax[] = {0, 125, 250, 375};
     int coordenaday[] = {0, 115, 230, 345};
@@ -106,24 +107,23 @@ void escolher_corte(SDL_Rect* c){
     c->w = 125;
 }
 
-//funcao que detecta uma colisao com algum dos obstaculos 
+//funcao que detecta uma colisao com algum dos obstaculos
 int colisao(SDL_Rect* b, SDL_Rect r[]){
     int i;
     SDL_Rect aux;
     for (i = 0; i < 3; i++)
     {
-        aux.x = r[i].x;
+aux.x = r[i].x;
         aux.y = r[i].y;
-        aux.h = r[i].w;
-        aux.w = r[i].h;
+aux.h = r[i].w;
+aux.w = r[i].h;
         if(SDL_HasIntersection(b, &aux)){
             return 1;
         }
     }
     return 0;
-    
+   
 }
-
 //funcao para diminuir o tamanho da raquetes
 void diminuir_tamanho(SDL_Rect* r1,SDL_Rect* r2){
     if((r1->h - 5) > MINIMO_RAQUETE){
@@ -132,11 +132,11 @@ void diminuir_tamanho(SDL_Rect* r1,SDL_Rect* r2){
         r2->h -= 5;
     }
 }
-
 typedef enum{
     PULANDO,
-    MORTO, 
-    QUICANDO, 
+    CAINDO,
+    MORTO,
+    QUICANDO,
     INICIO
 } Estados;
 
@@ -168,21 +168,19 @@ int main (int argc, char* args[])
    
     /* EXECUÇÃO */
 
-    SDL_Rect raquete1 = { 0,120, 10,70 };
+    SDL_Rect raquete1 = { 0,20, 10,70 };
     SDL_Rect raquete2 = { 490, 120, 10, 70};
     SDL_Rect bola = {240, 150, 10, 10};
     SDL_Rect obstaculos[3];
     SDL_Rect corte[3];
 
-
-    //Rectangulos para os textos
     SDL_Rect placar;
     SDL_Rect resultado_final;
     SDL_Rect melhor;
     SDL_Rect texto_melhor;
     SDL_Event evt;
 
-    int espera = 500;
+    int espera = 5000;
     int tqueda = 500;
     int tdie = 60000;
 
@@ -197,17 +195,15 @@ int main (int argc, char* args[])
     int contador;
     char aux[100];
     int acabou;
-    int velocidadex =2;
-    int velocidadey = -2;
-    int gravidade = 2;
-
+    int velocidadex =10; 
+    int velocidadey = JUMP_VEL;
     int i;
     int evento_enquanto_cai;
 
     Estados estado = INICIO;
 
     while (!close_request) {
-        
+       
 
         int isevt = AUX_WaitEventTimeoutCount(&evt, &espera);
         if (evt.type == SDL_QUIT) {
@@ -217,13 +213,15 @@ int main (int argc, char* args[])
         switch (estado)
         {
         case INICIO:
-            contador = 0; 
-            comecou = 0;
-            sprintf(aux, "%d", melhor_resultado);
+   comecou = 0;
+            contador = 0;
+   velocidadex = 2;
+
+   sprintf(aux, "%d", melhor_resultado);
             get_text_and_rect(ren, 150, 50, " ", fnt, &txt1, &resultado_final);
             get_text_and_rect(ren, 240, 80, "0", fnt, &txt, &placar);
-            get_text_and_rect(ren, ,180,130, "Best score",fnt,&txt2,&texto_melhor);
-            get_text_and_rect(ren, 250, 130, aux,fnt,&txt3,&melhor);
+            get_text_and_rect(ren,180,130, "Best score: ",fnt,&txt2,&texto_melhor);
+            get_text_and_rect(ren, 315, 130, aux,fnt,&txt3,&melhor);
 
             if(isevt){
                 switch (evt.type)
@@ -232,59 +230,42 @@ int main (int argc, char* args[])
                     estado = PULANDO;
                     comecou = 1;
                     posicao_obstaculos(obstaculos,3);
-                    for (i = 0; i < 3; i++) {
-                        escolher_corte(&corte[i]);
-                    }
+  for (i = 0; i < 3; i++) {
+      escolher_corte(&corte[i]);
+           }
                     break;
-                
+               
                 case SDL_KEYDOWN:
                     if(evt.key.keysym.sym==SDLK_SPACE){
                         estado = PULANDO;
                         comecou = 1;
-                        /*posicao_obstaculos(obstaculos,3);
-                        for (i = 0; i < 3; i++) {
-                            escolher_corte(&corte[i]);
-                        }*/
-                    }
-                    break;
-                }
+   }
+   break;
+}
             }
             break;
         case PULANDO:
+   comecou = 1;
             sprintf(aux, "%d", contador);
 
             startTime = SDL_GetTicks();
             deltaTime = SDL_GetTicks() - startTime;
-            if (deltatime > 20)
-            {
-                deltatime = 20;
-            }
-            
             get_text_and_rect(ren, 150, 50, " ", fnt, &txt1, &resultado_final);
             get_text_and_rect(ren, 240, 80, aux , fnt, &txt, &placar);
-            get_text_and_rect(ren, ,180,130, " ",fnt,&txt2,&texto_melhor);
+            get_text_and_rect(ren,180,130, " ",fnt,&txt2,&texto_melhor);
             get_text_and_rect(ren, 250, 130, " ",fnt,&txt3,&melhor);
-
 
             evento_enquanto_pula = AUX_WaitEventTimeoutCount(&evt, &espera);
             //fazer essa merda pular
-            //bola.x += velocidadex;
-            
-            bola.y += velocidadey*deltatime;
-            bola.x += velocidadex*deltatime;
-
-            velocidadey = velocidadey + gravidade*deltatime;
-            velocidadex += velocidadex;
-
-
+            bola.x += velocidadex;
+   bola.y -=velocidadey*4;
+   velocidadey += -0.8;
             printf("Estou pulando agora\n");
-
-
             if (SDL_HasIntersection(&raquete1, &bola) || SDL_HasIntersection(&raquete2, &bola)){
                 //Batendo nas raquetes
                 estado = QUICANDO;
-                    
-            }else if(bateu_parede(&bola)|| colisao(&bola, obstaculos)){
+                   
+            }else if(bateu_parede(&bola) || (colisao(&bola, obstaculos) && contador >= 1)){
                 //Batendo nas paredes
                 estado = MORTO;
 
@@ -294,25 +275,26 @@ int main (int argc, char* args[])
                     {
                         case SDL_MOUSEBUTTONDOWN:
                             estado = PULANDO;
-                            //Colocar uma parada para comecar o pulo novamente
+   velocidadey = JUMP_VEL;
                             break;
-                    
+                   
                         case SDL_KEYDOWN:
                             if(evt.key.keysym.sym==SDLK_SPACE){
                                 estado = PULANDO;
-                                //Colocar uma parada para comecar o pulo novamente
+velocidadey = JUMP_VEL;
                             }
                             break;
                     }
                 }else{
-                    espera = 500;
+                    estado = CAINDO;
+                    //cair
+                    tqueda = 5000;
                 }
             }
            
             break;
         case QUICANDO:
             contador += 1;// Aumentar 1 no contador de vezes que a bola quicou nas raquetes
-            printf("Estou quicando agora\n");
             
             if(bola.x < 250){
                 bola.x = raquete1.w;
@@ -323,38 +305,73 @@ int main (int argc, char* args[])
 
             get_text_and_rect(ren, 150, 50, " ", fnt, &txt1, &resultado_final);
             get_text_and_rect(ren, 240, 80, aux , fnt, &txt, &placar);
-            get_text_and_rect(ren, ,180,130, " ",fnt,&txt2,&texto_melhor);
+            get_text_and_rect(ren,180,130, " ",fnt,&txt2,&texto_melhor);
             get_text_and_rect(ren, 250, 130, " ",fnt,&txt3,&melhor);
-            //Inverter o sentido 
-            velocidadex = -velocidadex;
 
+            //Inverter o sentido
+   velocidadex = -velocidadex;
             //mexer raquete
             bola.x < 250 ? posicao_raquete(&raquete1):posicao_raquete(&raquete2);
+            estado = CAINDO;
 
-            //atualizar obstaculos 
+            //atualizar obstaculos
             posicao_obstaculos(obstaculos,3);
-            for (i = 0; i < 3; i++) {
-                escolher_corte(&corte[i]);
-            }
-
-            //diminuir o tamanho da raquete
-            if(contador % 4 == 0){
-                diminuir_raquete(&raquete1, &raquete2);
-            }
-            estado = PULANDO;
+   for (i = 0; i < 3; i++) {
+       escolher_corte(&corte[i]);
+   }
+           
             break;
-        case MORTO:
-            printf("Eu estou morto\n");
-            comecou = 0;
-            bola.x = 240;
-            bola.y = 150;
+        case CAINDO:
+            bola.x += velocidadex;
+            evento_enquanto_cai = AUX_WaitEventTimeoutCount(&evt, &tqueda);
 
 
             sprintf(aux, "%d", contador);
+            get_text_and_rect(ren, 150, 50, " ", fnt, &txt1, &resultado_final);
+            get_text_and_rect(ren, 240, 80, aux , fnt, &txt, &placar);
+            get_text_and_rect(ren,180,130, " ",fnt,&txt2,&texto_melhor);
+            get_text_and_rect(ren, 250, 130, " ",fnt,&txt3,&melhor);
+
+            if (SDL_HasIntersection(&raquete1, &bola) || SDL_HasIntersection(&raquete2, &bola)){
+                //Batendo nas raquetes
+                estado = QUICANDO;
+                   
+            }else if(bateu_parede(&bola) || (colisao(&bola, obstaculos) && contador >= 1)){
+                //Batendo nas paredes
+                printf("Ele entrou aqui para morre\n");
+                estado = MORTO;
+
+            }else{
+                if(evento_enquanto_cai){
+                    switch (evt.type)
+                    {
+                        case SDL_MOUSEBUTTONDOWN:
+                            estado = PULANDO;
+                            break;
+                   
+                        case SDL_KEYDOWN:
+                            if(evt.key.keysym.sym==SDLK_SPACE){
+                                estado = PULANDO;
+                            }
+                            break;
+                    }
+                }else{
+                    estado = CAINDO;
+                    //cair
+                    tqueda = 500;
+                }
+            }
+            break;
+        case MORTO:
+            comecou = 0;
+            bola.x = 240;
+            bola.y = 150;
+            sprintf(aux, "%d", contador);
             get_text_and_rect(ren, 150, 50, "SEU RESULTADO FOI:", fnt, &txt1, &resultado_final);
             get_text_and_rect(ren, 240, 80, aux, fnt, &txt, &placar);
-            get_text_and_rect(ren, ,180,130, " ",fnt,&txt2,&texto_melhor);
+            get_text_and_rect(ren,180,130, " ",fnt,&txt2,&texto_melhor);
             get_text_and_rect(ren, 250, 130, " ",fnt,&txt3,&melhor);
+
 
 
             //Calculo do melhor placar ate agora
@@ -370,7 +387,7 @@ int main (int argc, char* args[])
                 case SDL_MOUSEBUTTONDOWN:
                     estado = INICIO;
                     break;
-                
+               
                 case SDL_KEYDOWN:
                     if(evt.key.keysym.sym==SDLK_SPACE){
                         estado = INICIO;
@@ -388,16 +405,19 @@ int main (int argc, char* args[])
         SDL_RenderFillRect(ren, &raquete1);
         SDL_SetRenderDrawColor(ren, 255,255,255,0x00);
         SDL_RenderFillRect(ren, &raquete2);
-        SDL_SetRenderDrawColor(ren, 255,255,255,0x00);
-        SDL_RenderFillRect(ren, &bola);
         //obstaculos
         if(comecou){
-            for (i = 0; i < 3; i++) {
-                SDL_RenderCopy(ren, img, &corte[i], &obstaculos[i]);
-
-            }
+   SDL_SetRenderDrawColor(ren, 255,255,255,0x00);
+            SDL_RenderFillRect(ren, &bola);
+   if(contador >= 1){
+       for (i = 0; i < 3; i++) {
+   SDL_RenderCopy(ren, img, &corte[i], &obstaculos[i]);
+}
+   }
         }
         SDL_RenderCopy(ren, txt1, NULL, &resultado_final);
+SDL_RenderCopy(ren, txt2, NULL, &texto_melhor);
+SDL_RenderCopy(ren, txt3, NULL, &melhor);
         SDL_RenderCopy(ren, txt, NULL, &placar);
         SDL_RenderPresent(ren);
     }
