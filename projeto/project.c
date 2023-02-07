@@ -276,7 +276,7 @@ int main (int argc, char* args[])
             bola.x += velocidadex;
             bola.y -=velocidadey*4;
             velocidadey += -0.8;
-            printf("Estou pulando agora\n");
+
             if (SDL_HasIntersection(&raquete1, &bola) || SDL_HasIntersection(&raquete2, &bola)){
                 //Batendo nas raquetes
                 if(bola.x < 250){
@@ -339,7 +339,7 @@ int main (int argc, char* args[])
             estado = PULANDO;
             break;
         case MORTO:
-            comecou = 0;
+            //comecou = 0;
             bola.x = 240;
             bola.y = 150;
             sprintf(aux, "%d", contador);
